@@ -1,6 +1,6 @@
 # Hate Speech Detection API
 
-This is a FastAPI-based hate speech detection service that uses the Facebook RoBERTa model trained on the Dynabench dataset to detect hate speech in text.
+This is a FastAPI-based hate speech detection service that uses the RoBERTa model trained on the Dynabench dataset to detect hate speech in text.
 
 ## Features
 
@@ -60,17 +60,3 @@ The API will be available at `http://localhost:8000`
 ### API Documentation
 
 Visit `http://localhost:8000/docs` for interactive API documentation.
-
-## Model Details
-
-The API uses the `facebook/roberta-hate-speech-dynabench-r4-target` model, which is trained to detect:
-
-- Hate speech against religions, races, and other protected groups
-- Abusive language and profanity
-- Various forms of offensive content
-
-## Notes
-
-- The model is pre-trained and does not require custom training
-- It handles common misspellings of offensive words
-- The API includes text preprocessing to improve detection accuracy
