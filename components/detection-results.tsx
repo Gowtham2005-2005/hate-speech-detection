@@ -8,19 +8,22 @@ import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
+import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import type { DetectionResult } from "@/components/hate-speech-dashboard"
 import { HateSpeechScoreChart } from "@/components/hate-speech-score-chart"
 import { CategoryBreakdownChart } from "@/components/category-breakdown-chart"
 import { AnalysisLoading } from "@/components/analysis-loading"
-
+import { toast, Toaster } from "sonner"
 interface DetectionResultsProps {
   result: DetectionResult
 }
 
 export function DetectionResults({ result }: DetectionResultsProps) {
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState("overview")
   const [isLoading, setIsLoading] = useState(true)
+  const [isDownloading, setIsDownloading] = useState(false)
 
   // Add useEffect to simulate loading
   useEffect(() => {
@@ -30,6 +33,66 @@ export function DetectionResults({ result }: DetectionResultsProps) {
     return () => clearTimeout(timer)
   }, [])
 
+  
+
+    const handleDownloadReport = async () => {
+    try {
+      setIsDownloading(true)
+      
+      const response = await fetch('/api/download-report', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(result),
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate report')
+      }
+      
+      // Get the blob from the response
+      const blob = await response.blob()
+      
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob)
+      
+      // Create a temporary link element
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'hate-speech-analysis-report.pdf'
+      
+      // Append the link to the body
+      document.body.appendChild(link)
+      
+      // Click the link to download the file
+      link.click()
+      
+      // Remove the link from the body
+      document.body.removeChild(link)
+      
+      // Revoke the URL
+      window.URL.revokeObjectURL(url)
+      
+      toast.success("Report Downloaded", {
+        description: "Your analysis report has been successfully downloaded.",
+      })
+    } catch (error) {
+      console.error('Error downloading report:', error)
+      toast.error("Download Failed", {
+        description: "There was an error downloading the report. Please try again.",
+      })
+    } finally {
+      setIsDownloading(false)
+    }
+  }
+
+    const handleViewFullAnalysis = () => {
+    // Store the result in localStorage for retrieval in the full analysis page
+    localStorage.setItem('analysisResult', JSON.stringify(result))
+    // Navigate to the full analysis page
+    router.push('/results/full-analysis')
+  }
   if (isLoading) {
     return <AnalysisLoading />
   }
@@ -66,6 +129,11 @@ export function DetectionResults({ result }: DetectionResultsProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
+      <Toaster   position="bottom-right"
+  theme="system"
+  richColors
+  closeButton
+  />
       <div className="flex flex-col h-full">
         <div className="flex items-center justify-between p-6 border-b">
           <div className="flex items-center gap-2">
@@ -75,11 +143,16 @@ export function DetectionResults({ result }: DetectionResultsProps) {
             </Badge>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownloadReport}
+              disabled={isDownloading}
+            >
               <Download className="mr-2 h-4 w-4" />
-              Download Report
+              {isDownloading ? "Generating..." : "Download Report"}
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={handleViewFullAnalysis}>
               <BarChart2 className="mr-2 h-4 w-4" />
               Full Analysis
             </Button>
